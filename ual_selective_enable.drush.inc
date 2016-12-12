@@ -169,6 +169,6 @@ function drush_ual_selective_enable() {
   if(!empty($disabled_base_modules)) {
     drush_print("The following base module(s) were not enabled: \n" . implode($disabled_base_modules, ","));
     drush_print("Enabling....");
-    drush_module_enable($disabled_base_modules);
+    drush_invoke_process("@self", "pm-enable", $disabled_base_modules);
   }
 }
