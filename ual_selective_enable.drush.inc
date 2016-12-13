@@ -20,7 +20,7 @@ function ual_selective_enable_drush_command() {
     'description' => 'Selectively enable modules against a list',
     'callback' => 'drush_ual_selective_enable',
     'options' => array(
-      'base_modules' => 'A JSON file containing the required modules'
+      'base_projects' => 'A JSON file containing the required modules'
     ),
     'aliases' => array('sel-en'),
   );
@@ -29,7 +29,7 @@ function ual_selective_enable_drush_command() {
 }
 
 function drush_ual_selective_enable() {
-  $config_filename = drush_get_option('base_modules', NULL);
+  $config_filename = drush_get_option('base_projects', NULL);
   $config_handle = fopen($config_filename, 'r');
 
   if(!$config_handle) {
@@ -43,18 +43,20 @@ function drush_ual_selective_enable() {
   if(!$parsed_json) {
     ual_selective_enable_fatal_error("Could not parse $config_filename");
   }
-  if(!isset($parsed_json['base_modules'])) {
-    ual_selective_enable_fatal_error("No base_modules key was specified in $config_filename");
+  if(!isset($parsed_json['base_projects'])) {
+    ual_selective_enable_fatal_error("No base_projects key was specified in $config_filename");
   }
 
-  $base_modules = $parsed_json['base_modules'];
+  $base_projects = $parsed_json['base_projects'];
   $enabled_modules = array_keys(drush_module_list());
-  $enabled_base_modules = array_intersect($base_modules, $enabled_modules);
-  $disabled_base_modules = array_diff($base_modules, $enabled_base_modules);
-  if(!empty($disabled_base_modules)) {
-    drush_print("The following base module(s) were not enabled: \n" . implode($disabled_base_modules, ","));
+  $enabled_themes = array_keys(drush_theme_list());
+  $enabled_projects = array_merge($enabled_modules, $enabled_projects);
+  $enabled_base_projects = array_intersect($base_projects, $enabled_projects);
+  $disabled_base_projects = array_diff($base_projects, $enabled_base_projects);
+  if(!empty($disabled_base_projects)) {
+    drush_print("The following base projects(s) were not enabled: \n" . implode($disabled_base_projects, ","));
     drush_print("Enabling....");
-    drush_invoke_process("@self", "pm-enable", $disabled_base_modules);
+    drush_invoke_process("@self", "pm-enable", $disabled_base_projects);
   }
 
 }
