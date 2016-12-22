@@ -25,10 +25,19 @@ function ual_selective_enable_drush_command() {
     'aliases' => array('sel-en'),
   );
 
+  $items['ual-selective-disable'] = array(
+    'description' => 'Selectively disable modules against a list',
+    'callback' => 'drush_ual_selective_disable',
+    'options' => array(
+      'base_projects' => 'A JSON file containing the required modules'
+    ),
+    'aliases' => array('sel-dis'),
+  );
+
   return $items;
 }
 
-function drush_ual_selective_enable() {
+function _drush_ual_selective_enable_parse_config() {
   $config_filename = drush_get_option('base_projects', NULL);
   $config_handle = fopen($config_filename, 'r');
 
@@ -47,10 +56,38 @@ function drush_ual_selective_enable() {
     ual_selective_enable_fatal_error("No base_projects key was specified in $config_filename");
   }
 
+  return $parsed_json;
+
+}
+
+function _drush_ual_selective_enable_get_enabled_projects($parsed_json) {
   $base_projects = $parsed_json['base_projects'];
   $enabled_modules = array_keys(drush_module_list());
   $enabled_themes = array_keys(drush_theme_list());
-  $enabled_projects = array_merge($enabled_modules, $enabled_projects);
+  $enabled_projects = array_merge($enabled_modules, $enabled_themes);
+
+  return $enabled_projects;
+
+}
+
+function drush_ual_selective_disable() {
+  $parsed_json = _drush_ual_selective_enable_parse_config();
+  $base_projects = $parsed_json['base_projects'];
+  $enabled_projects = _drush_ual_selective_enable_get_enabled_projects($parsed_json);
+
+  $enabled_base_projects = array_intersect($base_projects, $enabled_projects);
+  if(!empty($enabled_base_projects)) {
+    drush_print("The following base projects(s) are enabled: \n" . implode($enabled_base_projects, ","));
+    drush_print("Disabling....");
+    drush_invoke_process("@self", "pm-disable", $enabled_base_projects);
+  }
+}
+
+function drush_ual_selective_enable() {
+  $parsed_json = _drush_ual_selective_enable_parse_config();
+  $base_projects = $parsed_json['base_projects'];
+  $enabled_projects = _drush_ual_selective_enable_get_enabled_projects($parsed_json);
+
   $enabled_base_projects = array_intersect($base_projects, $enabled_projects);
   $disabled_base_projects = array_diff($base_projects, $enabled_base_projects);
   if(!empty($disabled_base_projects)) {
