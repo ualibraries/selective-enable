@@ -20,7 +20,8 @@ function selective_enable_drush_command() {
     'description' => 'Selectively enable modules against a list',
     'callback' => 'drush_selective_enable',
     'options' => array(
-      'base_projects' => 'A JSON file containing the required modules'
+      'projects' => 'A JSON file containing the required modules',
+      'key' => 'The in the JSON file containing the modules to be enabled'
     ),
     'aliases' => array('sel-en'),
   );
@@ -29,7 +30,8 @@ function selective_enable_drush_command() {
     'description' => 'Selectively disable modules against a list',
     'callback' => 'drush_selective_disable',
     'options' => array(
-      'base_projects' => 'A JSON file containing the required modules'
+      'projects' => 'A JSON file containing the required modules',
+      'key' => 'The in the JSON file containing the modules to be enabled'
     ),
     'aliases' => array('sel-dis'),
   );
@@ -38,7 +40,9 @@ function selective_enable_drush_command() {
 }
 
 function _drush_selective_enable_parse_config() {
-  $config_filename = drush_get_option('base_projects', NULL);
+  $config_filename = drush_get_option('projects', NULL);
+  $key = drush_get_option('key', NULL);
+
   $config_handle = fopen($config_filename, 'r');
 
   if(!$config_handle) {
@@ -52,8 +56,8 @@ function _drush_selective_enable_parse_config() {
   if(!$parsed_json) {
     selective_enable_fatal_error("Could not parse $config_filename");
   }
-  if(!isset($parsed_json['base_projects'])) {
-    selective_enable_fatal_error("No base_projects key was specified in $config_filename");
+  if(!isset($parsed_json[$key])) {
+    selective_enable_fatal_error("No $key key was specified in $config_filename");
   }
 
   return $parsed_json;
@@ -61,7 +65,8 @@ function _drush_selective_enable_parse_config() {
 }
 
 function _drush_selective_enable_get_enabled_projects($parsed_json) {
-  $base_projects = $parsed_json['base_projects'];
+  $key = drush_get_option('key', NULL);
+  $base_projects = $parsed_json[$key];
   $enabled_modules = array_keys(drush_module_list());
   $enabled_themes = array_keys(drush_theme_list());
   $enabled_projects = array_merge($enabled_modules, $enabled_themes);
@@ -72,7 +77,8 @@ function _drush_selective_enable_get_enabled_projects($parsed_json) {
 
 function drush_selective_disable() {
   $parsed_json = _drush_selective_enable_parse_config();
-  $base_projects = $parsed_json['base_projects'];
+  $key = drush_get_option('key', NULL);
+  $base_projects = $parsed_json[$key];
   $enabled_projects = _drush_selective_enable_get_enabled_projects($parsed_json);
 
   $enabled_base_projects = array_intersect($base_projects, $enabled_projects);
@@ -85,7 +91,8 @@ function drush_selective_disable() {
 
 function drush_selective_enable() {
   $parsed_json = _drush_selective_enable_parse_config();
-  $base_projects = $parsed_json['base_projects'];
+  $key = drush_get_option('key', NULL);
+  $base_projects = $parsed_json[$key];
   $enabled_projects = _drush_selective_enable_get_enabled_projects($parsed_json);
 
   $enabled_base_projects = array_intersect($base_projects, $enabled_projects);
